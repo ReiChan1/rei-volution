@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { expenseSchema } from "@/lib/validations";
@@ -24,11 +25,11 @@ export async function GET(req: Request) {
       ? { title: sortDir }
       : { date: sortDir };
 
-  const where = {
+  const where: Prisma.ExpenseWhereInput = {
     userId,
     archived,
     ...(search
-      ? { title: { contains: search, mode: "insensitive" } }
+      ? { title: { contains: search, mode: "insensitive" as const } }
       : {}),
     ...(category && category !== "all" ? { category: { name: category } } : {}),
   };
