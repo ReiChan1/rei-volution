@@ -1,0 +1,19 @@
+node_modules
+.next
+out
+build
+*.log
+npm-debug.log*
+
+# Environment files — these hold real secrets (DB password, auth secret).
+# Never commit them. .env.example is the only one that should be tracked.
+.env
+.env.local
+.env*.local
+!.env.example
+
+dev.db
+dev.db-journal
+.DS_Store
+*.pem
+.vercel

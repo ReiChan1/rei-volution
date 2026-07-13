@@ -1,0 +1,256 @@
+// Prisma schema for Rei-volution
+// Prisma 7: connection URLs live in prisma.config.ts (project root), not here.
+// See prisma.config.ts and README §3 for exact Supabase setup steps.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// AUTH / USERS
+// ---------------------------------------------------------------------------
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
+model User {
+  id             String    @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String    @unique
+  passwordHash   String
+  pinHash        String?
+  jobPosition    String?
+  profileImage   String?
+  companyId      String?
+  company        Company?  @relation(fields: [companyId], references: [id])
+  theme          String    @default("dark")
+  currency       String    @default("USD")
+  timezone       String    @default("UTC")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  expenses       Expense[]
+  savingsAccounts SavingsAccount[]
+  tasks          Task[]
+  taskLabels     TaskLabel[]
+  attendance     Attendance[]
+  calendarEvents CalendarEvent[]
+  notifications  Notification[]
+  reports        Report[]
+  settings       Settings?
+  sessions       Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+// ---------------------------------------------------------------------------
+// EXPENSES
+// ---------------------------------------------------------------------------
+
+model ExpenseCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  icon     String?
+  color    String?
+  expenses Expense[]
+}
+
+model Expense {
+  id             String           @id @default(cuid())
+  title          String
+  description    String?
+  amount         Float
+  paymentMethod  String
+  date           DateTime
+  receiptImage   String?
+  notes          String?
+  archived       Boolean          @default(false)
+  categoryId     String?
+  category       ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// SAVINGS
+// ---------------------------------------------------------------------------
+
+model SavingsAccount {
+  id           String               @id @default(cuid())
+  name         String
+  type         String               // cash | bank | ewallet | credit_card | emergency | investment | company
+  isCompany    Boolean              @default(false)
+  balance      Float                @default(0)
+  goal         Float?
+  color        String?
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions SavingsTransaction[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model SavingsTransaction {
+  id        String         @id @default(cuid())
+  type      String         // deposit | withdraw | transfer_in | transfer_out
+  amount    Float
+  notes     String?
+  date      DateTime       @default(now())
+  accountId String
+  account   SavingsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// ATTENDANCE
+// ---------------------------------------------------------------------------
+
+model Attendance {
+  id            String   @id @default(cuid())
+  date          DateTime
+  timeIn        DateTime?
+  lunchOut      DateTime?
+  lunchIn       DateTime?
+  timeOut       DateTime?
+  status        String   // present | absent | late | leave | holiday | half_day
+  lateMinutes   Int      @default(0)
+  overtimeMins  Int      @default(0)
+  undertimeMins Int      @default(0)
+  breakMinutes  Int      @default(0)
+  expectedHours Float    @default(8)
+  totalHours    Float    @default(0)
+  notes         String?
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// TASKS
+// ---------------------------------------------------------------------------
+
+model TaskLabel {
+  id     String  @id @default(cuid())
+  name   String
+  color  String
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  TaskOnLabel[]
+}
+
+model Task {
+  id           String          @id @default(cuid())
+  title        String
+  description  String?
+  priority     String          @default("medium") // low | medium | high | critical
+  status       String          @default("pending") // pending | in_progress | completed | cancelled
+  dueDate      DateTime?
+  dueTime      String?
+  reminder     Boolean         @default(false)
+  subtasks     Subtask[]
+  labels       TaskOnLabel[]
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarEvent CalendarEvent?
+  reports      Report[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Subtask {
+  id        String  @id @default(cuid())
+  title     String
+  done      Boolean @default(false)
+  taskId    String
+  task      Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model TaskOnLabel {
+  taskId  String
+  labelId String
+  task    Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label   TaskLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+}
+
+// ---------------------------------------------------------------------------
+// REPORTS
+// ---------------------------------------------------------------------------
+
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  reportDate DateTime @default(now())
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// CALENDAR
+// ---------------------------------------------------------------------------
+
+model CalendarEvent {
+  id        String   @id @default(cuid())
+  title     String
+  start     DateTime
+  end       DateTime?
+  allDay    Boolean  @default(true)
+  type      String   @default("event") // task | deadline | meeting | birthday | event
+  color     String?
+  taskId    String?  @unique
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS / SETTINGS
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   // task_due | budget_exceeded | savings_goal | attendance_missing | security
+  read      Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthlyBudget      Float?
+  dateFormat         String  @default("MM/dd/yyyy")
+  notifyTaskDue      Boolean @default(true)
+  notifyBudget       Boolean @default(true)
+  notifySavingsGoal  Boolean @default(true)
+  notifyAttendance   Boolean @default(true)
+}

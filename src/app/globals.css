@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+:root {
+  /* ---- Light mode: cream + lavender kawaii palette ---- */
+  --bg: #FBF6F0;
+  --surface: #FFFFFF;
+  --surface-2: #F5EEFB;
+  --border: #E9DEF5;
+  --foreground: #4A3F55;
+  --muted: #9C8FAE;
+
+  --primary: #A78BDB;
+  --primary-foreground: #FFFFFF;
+  --teal: #7FD1B9;
+  --amber: #F3B988;
+  --danger: #F2A0B3;
+  --company: #F4B6C2;
+
+  --radius: 1.5rem;
+}
+
+.dark {
+  /* ---- Dark mode: cozy plum, still soft ---- */
+  --bg: #241E30;
+  --surface: #2E2739;
+  --surface-2: #362E45;
+  --border: #453A56;
+  --foreground: #F3ECFB;
+  --muted: #B4A7C6;
+
+  --primary: #C3AEF0;
+  --primary-foreground: #2A2136;
+  --teal: #8BE0C7;
+  --amber: #F6C89F;
+  --danger: #F4AABB;
+  --company: #F0B8CB;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-teal: var(--teal);
+  --color-amber: var(--amber);
+  --color-danger: var(--danger);
+  --color-company: var(--company);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --radius-card: var(--radius);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--foreground);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(ellipse 900px 500px at 100% -10%, color-mix(in srgb, var(--primary) 12%, transparent), transparent),
+    radial-gradient(ellipse 700px 500px at -10% 110%, color-mix(in srgb, var(--teal) 12%, transparent), transparent);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  letter-spacing: 0.01em;
+}
+
+::selection {
+  background: var(--primary);
+  color: white;
+}
+
+/* Round, candy-colored scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+.glass {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.card-shadow {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--primary) 8%, transparent),
+    0 14px 30px -16px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.dark .card-shadow {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 16px 34px -16px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.bob { animation: bob 3.5s ease-in-out infinite; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+}
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
