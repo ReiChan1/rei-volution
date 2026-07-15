@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
-import { UserCircle2 } from "lucide-react";
 import { signupSchema, type SignupInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
 
   const {
     register,
@@ -32,21 +30,13 @@ export default function SignupPage() {
 
   const agree = watch("agree");
 
-  function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  }
-
   async function onSubmit(values: SignupInput) {
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, profileImage: preview }),
+        body: JSON.stringify(values),
       });
       const data = await res.json();
 
@@ -84,24 +74,6 @@ export default function SignupPage() {
       <p className="mt-1 text-sm text-muted">Set up your workspace in a couple of minutes.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2">
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="Profile preview" className="h-full w-full object-cover" />
-            ) : (
-              <UserCircle2 className="h-8 w-8 text-muted" />
-            )}
-          </div>
-          <div>
-            <Label htmlFor="profileImage" className="cursor-pointer text-sm text-primary">
-              Upload profile picture
-            </Label>
-            <input id="profileImage" type="file" accept="image/*" onChange={handleImage} className="hidden" />
-            <p className="text-xs text-muted">Optional · PNG or JPG</p>
-          </div>
-        </div>
-
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="firstName">First name</Label>
