@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
-import { Menu, Search, Sun, Moon, LogOut, User, Settings } from "lucide-react";
+import { Menu, Sun, Moon, LogOut, User, Settings } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,7 +25,6 @@ export function Topbar({
 }) {
   const { theme, setTheme } = useTheme();
   const { setMobileSidebarOpen } = useUIStore();
-  const [query, setQuery] = useState("");
 
   return (
     <header className="glass sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border px-4 sm:px-6">
@@ -36,16 +34,6 @@ export function Topbar({
       >
         <Menu className="h-5 w-5" />
       </button>
-
-      <div className="relative hidden max-w-sm flex-1 sm:block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search tasks, expenses, events…"
-          className="h-10 w-full rounded-xl border border-border bg-surface-2/60 pl-9 pr-3 text-sm outline-none transition-colors focus:border-primary focus:bg-surface"
-        />
-      </div>
 
       <div className="ml-auto flex items-center gap-2">
         <Button
