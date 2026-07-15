@@ -4,6 +4,9 @@ export const ACCENT_THEMES = [
   { id: "cherry", label: "Cherry", swatch: "#E0748A" },
   { id: "matcha", label: "Matcha", swatch: "#6FAE7F" },
   { id: "peach", label: "Peach", swatch: "#E0964F" },
+  { id: "sunshine", label: "Sunshine", swatch: "#E0B84F" },
+  { id: "mint", label: "Mint", swatch: "#4FB8A8" },
+  { id: "berry", label: "Berry", swatch: "#A8508F" },
 ] as const;
 
 export type AccentId = (typeof ACCENT_THEMES)[number]["id"];
