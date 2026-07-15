@@ -57,6 +57,77 @@
   --radius-card: var(--radius);
 }
 
+/* ---------------------------------------------------------------------------
+   Accent color themes — pick one in Settings. Each overrides just the brand
+   hue (primary/company) and the tinted panel color, so status colors
+   (teal=savings, amber=expenses, danger=delete) stay consistent everywhere.
+--------------------------------------------------------------------------- */
+
+[data-accent="lavender"] {
+  --primary: #A78BDB;
+  --company: #F4B6C2;
+  --surface-2: #F5EEFB;
+  --border: #E9DEF5;
+}
+.dark[data-accent="lavender"] {
+  --primary: #C3AEF0;
+  --company: #F0B8CB;
+  --surface-2: #362E45;
+  --border: #453A56;
+}
+
+[data-accent="ocean"] {
+  --primary: #6FA8DC;
+  --company: #8FC1E8;
+  --surface-2: #EAF3FB;
+  --border: #D9E9F7;
+}
+.dark[data-accent="ocean"] {
+  --primary: #8FC1F0;
+  --company: #A8D4F0;
+  --surface-2: #2A3444;
+  --border: #3A4B5C;
+}
+
+[data-accent="cherry"] {
+  --primary: #E0748A;
+  --company: #F0A8B8;
+  --surface-2: #FBEDF0;
+  --border: #F5D9DF;
+}
+.dark[data-accent="cherry"] {
+  --primary: #F0899D;
+  --company: #F0AABC;
+  --surface-2: #3A2530;
+  --border: #4A2F3B;
+}
+
+[data-accent="matcha"] {
+  --primary: #6FAE7F;
+  --company: #9FCFA8;
+  --surface-2: #EEF6EE;
+  --border: #DCEEDC;
+}
+.dark[data-accent="matcha"] {
+  --primary: #8AD19C;
+  --company: #A8DCB4;
+  --surface-2: #223328;
+  --border: #2E4535;
+}
+
+[data-accent="peach"] {
+  --primary: #E0964F;
+  --company: #F0B87A;
+  --surface-2: #FBF0E4;
+  --border: #F5E2C9;
+}
+.dark[data-accent="peach"] {
+  --primary: #F0AA6B;
+  --company: #F0C48F;
+  --surface-2: #3A2E1E;
+  --border: #4A3B26;
+}
+
 * {
   border-color: var(--border);
 }
