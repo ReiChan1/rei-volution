@@ -128,6 +128,45 @@
   --border: #4A3B26;
 }
 
+[data-accent="sunshine"] {
+  --primary: #E0B84F;
+  --company: #F0D080;
+  --surface-2: #FBF6E0;
+  --border: #F5E9BE;
+}
+.dark[data-accent="sunshine"] {
+  --primary: #F0CC6B;
+  --company: #F0DB94;
+  --surface-2: #3A331E;
+  --border: #4A4226;
+}
+
+[data-accent="mint"] {
+  --primary: #4FB8A8;
+  --company: #7ACFC0;
+  --surface-2: #E0F5F0;
+  --border: #C5EAE2;
+}
+.dark[data-accent="mint"] {
+  --primary: #6BD0C0;
+  --company: #8FE0D2;
+  --surface-2: #1E3A35;
+  --border: #264A43;
+}
+
+[data-accent="berry"] {
+  --primary: #A8508F;
+  --company: #C578AC;
+  --surface-2: #F5E4EF;
+  --border: #EAC9DD;
+}
+.dark[data-accent="berry"] {
+  --primary: #C070A8;
+  --company: #D690C0;
+  --surface-2: #331E2E;
+  --border: #45283C;
+}
+
 * {
   border-color: var(--border);
 }
