@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { LogOut, Moon, Sun, Download, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { LogOut, Moon, Sun, Download, KeyRound, ShieldCheck, Trash2, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { initials } from "@/lib/utils";
+import { initials, cn } from "@/lib/utils";
+import { ACCENT_THEMES, type AccentId, getStoredAccent, setStoredAccent } from "@/lib/accent-theme";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "PHP", "JPY", "AUD", "CAD", "SGD"];
 const TIMEZONES = ["UTC", "America/New_York", "America/Los_Angeles", "Europe/London", "Asia/Manila", "Asia/Tokyo", "Asia/Singapore", "Australia/Sydney"];
@@ -26,6 +27,17 @@ export default function SettingsPage() {
   const { data: session, update } = useSession();
   const { theme, setTheme } = useTheme();
   const user = session?.user as any;
+
+  const [accent, setAccentState] = useState<AccentId>("lavender");
+
+  useEffect(() => {
+    setAccentState(getStoredAccent());
+  }, []);
+
+  function setAccent(id: AccentId) {
+    setAccentState(id);
+    setStoredAccent(id);
+  }
 
   const [currency, setCurrency] = useState("USD");
   const [timezone, setTimezone] = useState("UTC");
@@ -117,7 +129,7 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-2xl border border-border p-4">
             <div>
               <p className="text-sm font-medium">Theme</p>
@@ -130,6 +142,35 @@ export default function SettingsPage() {
               <Button variant={theme === "dark" ? "default" : "outline"} size="sm" onClick={() => setTheme("dark")}>
                 <Moon className="h-4 w-4" /> Dark
               </Button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border p-4">
+            <p className="text-sm font-medium">Accent color</p>
+            <p className="text-xs text-muted">Pick the hue used for buttons, links, and highlights.</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {ACCENT_THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setAccent(t.id)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl px-2 py-2 transition-colors",
+                    accent === t.id ? "bg-surface-2" : "hover:bg-surface-2/60"
+                  )}
+                >
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-full transition-shadow"
+                    style={{
+                      background: t.swatch,
+                      boxShadow: accent === t.id ? `0 0 0 3px var(--surface), 0 0 0 5px ${t.swatch}` : "none",
+                    }}
+                  >
+                    {accent === t.id && <Check className="h-4 w-4 text-white" />}
+                  </span>
+                  <span className="text-xs text-muted">{t.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </CardContent>
