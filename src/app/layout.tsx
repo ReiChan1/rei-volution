@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-192.jpg", sizes: "192x192", type: "image/jpeg" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
@@ -58,6 +58,15 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          // Runs before hydration so the accent color is correct on first
+          // paint — same no-flash trick next-themes uses for dark/light.
+          dangerouslySetInnerHTML={{
+            __html: `try{var a=localStorage.getItem("rei-accent-theme")||"lavender";document.documentElement.setAttribute("data-accent",a);}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <AuthProvider>
