@@ -37,3 +37,4 @@ export function getStoredAccent(): AccentId {
   }
   return DEFAULT_ACCENT;
 }
+
