@@ -230,7 +230,7 @@ export default function TasksPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {["low", "medium", "high", "critical"].map((p) => (
-                      <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+                      <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
