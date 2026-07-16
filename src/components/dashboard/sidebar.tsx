@@ -45,7 +45,7 @@ export function Sidebar() {
         animate={{ width: sidebarCollapsed ? 76 : 248 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-surface lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex h-screen min-h-screen flex-col border-r border-border bg-surface lg:static lg:h-full lg:min-h-0 lg:shrink-0 lg:translate-x-0",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -58,7 +58,7 @@ export function Sidebar() {
           )}
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {nav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
@@ -88,7 +88,7 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="border-t border-border p-3">
+        <div className="mt-auto shrink-0 border-t border-border p-3">
           <button
             onClick={toggleSidebar}
             className="hidden w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-foreground lg:flex"
