@@ -37,6 +37,10 @@ export const expenseSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than 0"),
   category: z.string().min(1, "Pick a category"),
   paymentMethod: z.string().min(1, "Pick a payment method"),
+
+  // NEW
+  savingsAccountId: z.string().min(1, "Select the account to deduct from"),
+
   date: z.string().min(1, "Date is required"),
   notes: z.string().optional(),
 });
