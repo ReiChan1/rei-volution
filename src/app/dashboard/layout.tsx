@@ -15,9 +15,9 @@ export default async function DashboardLayout({
   const user = session.user as any;
 
   return (
-    <div className="flex min-h-screen w-full bg-bg">
+    <div className="flex h-screen w-full overflow-hidden bg-bg">
       <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <Topbar user={{ firstName: user.firstName, lastName: user.lastName, image: user.image }} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
@@ -25,3 +25,4 @@ export default async function DashboardLayout({
     </div>
   );
 }
+
