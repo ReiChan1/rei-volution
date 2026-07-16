@@ -36,7 +36,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { expenseSchema, type ExpenseInput, type ExpenseFormValues } from "@/lib/validations";
+import { expenseSchema, PAYMENT_METHOD_TO_ACCOUNT_TYPE, type ExpenseInput, type ExpenseFormValues } from "@/lib/validations";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui-store";
 
@@ -64,6 +64,14 @@ type Expense = {
   date: string;
   notes: string | null;
   category: { name: string } | null;
+  savingsAccount: { id: string; name: string; type: string } | null;
+};
+
+type SavingsAccount = {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
 };
 
 type Stats = { monthly: number; weekly: number; yearly: number; total: number };
@@ -73,6 +81,7 @@ export default function ExpensesPage() {
   const { data: session } = useSession();
   const currency = (session?.user as any)?.currency ?? "USD";
   const [items, setItems] = useState<Expense[]>([]);
+  const [savingsAccounts, setSavingsAccounts] = useState<SavingsAccount[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -117,14 +126,42 @@ export default function ExpensesPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    fetch("/api/savings")
+      .then((res) => res.json())
+      .then((data) => setSavingsAccounts(Array.isArray(data) ? data : []))
+      .catch(() => setSavingsAccounts([]));
+  }, []);
+
+  const paymentMethod = watch("paymentMethod");
+  const savingsAccountId = watch("savingsAccountId");
+
+  function findAccountForPayment(method: string) {
+    const accountType = PAYMENT_METHOD_TO_ACCOUNT_TYPE[method];
+    if (!accountType) return savingsAccounts[0]?.id ?? "";
+    return savingsAccounts.find((a) => a.type === accountType)?.id ?? savingsAccounts[0]?.id ?? "";
+  }
+
+  useEffect(() => {
+    if (!paymentMethod || savingsAccounts.length === 0) return;
+    const currentId = watch("savingsAccountId");
+    if (!currentId || !savingsAccounts.some((a) => a.id === currentId)) {
+      setValue("savingsAccountId", findAccountForPayment(paymentMethod));
+    }
+  }, [paymentMethod, savingsAccounts, setValue, watch]);
+
+  const selectedAccount = savingsAccounts.find((a) => a.id === savingsAccountId);
+
   function openCreate() {
     setEditing(null);
+    const defaultPayment = PAYMENT_METHODS[0];
     reset({
       title: "",
       description: "",
       amount: undefined,
       category: CATEGORIES[0],
-      paymentMethod: PAYMENT_METHODS[0],
+      paymentMethod: defaultPayment,
+      savingsAccountId: findAccountForPayment(defaultPayment),
       date: new Date().toISOString().slice(0, 10),
       notes: "",
     });
@@ -139,6 +176,7 @@ export default function ExpensesPage() {
       amount: expense.amount,
       category: expense.category?.name ?? CATEGORIES[0],
       paymentMethod: expense.paymentMethod,
+      savingsAccountId: expense.savingsAccount?.id ?? findAccountForPayment(expense.paymentMethod),
       date: expense.date.slice(0, 10),
       notes: expense.notes ?? "",
     });
@@ -251,6 +289,7 @@ export default function ExpensesPage() {
                   <th className="pb-3 pr-4 font-medium">Title</th>
                   <th className="pb-3 pr-4 font-medium">Category</th>
                   <th className="pb-3 pr-4 font-medium">Method</th>
+                  <th className="pb-3 pr-4 font-medium">Deducted from</th>
                   <th className="pb-3 pr-4 font-medium">Date</th>
                   <th className="pb-3 pr-4 text-right font-medium">Amount</th>
                   <th className="pb-3 pr-0 text-right font-medium">Actions</th>
@@ -260,12 +299,12 @@ export default function ExpensesPage() {
                 {loading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="border-b border-border/60">
-                      <td className="py-3.5" colSpan={6}><div className="skeleton h-5 w-full rounded-lg" /></td>
+                      <td className="py-3.5" colSpan={7}><div className="skeleton h-5 w-full rounded-lg" /></td>
                     </tr>
                   ))
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-muted">
+                    <td colSpan={7} className="py-10 text-center text-muted">
                       No expenses match your filters yet.
                     </td>
                   </tr>
@@ -278,6 +317,13 @@ export default function ExpensesPage() {
                       </td>
                       <td className="py-3.5 pr-4"><Badge variant="muted">{e.category?.name ?? "Others"}</Badge></td>
                       <td className="py-3.5 pr-4 text-muted">{e.paymentMethod}</td>
+                      <td className="py-3.5 pr-4">
+                        {e.savingsAccount ? (
+                          <Badge variant="muted">{e.savingsAccount.name}</Badge>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
                       <td className="py-3.5 pr-4 text-muted">
                         {new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </td>
@@ -342,13 +388,51 @@ export default function ExpensesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Payment method</Label>
-                <Select value={watch("paymentMethod")} onValueChange={(v) => setValue("paymentMethod", v)}>
+                <Select
+                  value={watch("paymentMethod")}
+                  onValueChange={(v) => {
+                    setValue("paymentMethod", v);
+                    setValue("savingsAccountId", findAccountForPayment(v));
+                  }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Deduct from savings</Label>
+              {savingsAccounts.length === 0 ? (
+                <p className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm text-muted">
+                  No savings accounts yet. Create one on the Savings page first.
+                </p>
+              ) : (
+                <>
+                  <Select
+                    value={watch("savingsAccountId")}
+                    onValueChange={(v) => setValue("savingsAccountId", v)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                    <SelectContent>
+                      {savingsAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} ({formatCurrency(a.balance, currency)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedAccount && (
+                    <p className="text-xs text-muted">
+                      {formatCurrency(selectedAccount.balance, currency)} available in {selectedAccount.name}
+                    </p>
+                  )}
+                </>
+              )}
+              {errors.savingsAccountId && (
+                <p className="text-xs text-danger">{errors.savingsAccountId.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>
