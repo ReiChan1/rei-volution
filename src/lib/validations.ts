@@ -67,6 +67,15 @@ export const savingsAccountSchema = z.object({
 export type SavingsAccountInput = z.infer<typeof savingsAccountSchema>;
 export type SavingsAccountFormValues = z.input<typeof savingsAccountSchema>;
 
+export const PAYMENT_METHOD_TO_ACCOUNT_TYPE: Record<string, SavingsAccountInput["type"]> = {
+  Cash: "cash",
+  "Debit Card": "bank",
+  "Credit Card": "credit_card",
+  "Bank Transfer": "bank",
+  GCash: "ewallet",
+  Maya: "ewallet",
+};
+
 export const savingsTransactionSchema = z.object({
   type: z.enum(["deposit", "withdraw"]),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
