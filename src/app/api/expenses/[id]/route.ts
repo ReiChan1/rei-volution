@@ -18,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await prisma.expense.update({
       where: { id },
       data: { archived: body.archived },
-      include: { category: true },
+      include: { category: true, savingsAccount: true },
     });
     return NextResponse.json(updated);
   }
@@ -27,20 +27,89 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
-  const { category, date, ...rest } = parsed.data;
+
+  const { category, date, savingsAccountId, amount, title, description, paymentMethod, notes } =
+    parsed.data;
 
   let categoryRecord = await prisma.expenseCategory.findUnique({ where: { name: category } });
   if (!categoryRecord) {
     categoryRecord = await prisma.expenseCategory.create({ data: { name: category } });
   }
 
-  const updated = await prisma.expense.update({
-    where: { id },
-    data: { ...rest, date: new Date(date), categoryId: categoryRecord.id },
-    include: { category: true },
-  });
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const accountChanged = existing.savingsAccountId !== savingsAccountId;
+      const amountChanged = existing.amount !== amount;
 
-  return NextResponse.json(updated);
+      if (accountChanged || amountChanged) {
+        if (existing.savingsAccountId) {
+          await tx.savingsAccount.update({
+            where: { id: existing.savingsAccountId },
+            data: { balance: { increment: existing.amount } },
+          });
+
+          await tx.savingsTransaction.create({
+            data: {
+              accountId: existing.savingsAccountId,
+              type: "deposit",
+              amount: existing.amount,
+              notes: `Expense updated (refund): ${existing.title}`,
+              date: new Date(),
+            },
+          });
+        }
+
+        const account = await tx.savingsAccount.findFirst({
+          where: { id: savingsAccountId, userId },
+        });
+
+        if (!account) {
+          throw new Error("Selected savings account was not found.");
+        }
+
+        if (account.balance < amount) {
+          throw new Error(`Not enough balance in "${account.name}".`);
+        }
+
+        await tx.savingsAccount.update({
+          where: { id: account.id },
+          data: { balance: { decrement: amount } },
+        });
+
+        await tx.savingsTransaction.create({
+          data: {
+            accountId: account.id,
+            type: "withdraw",
+            amount,
+            notes: notes ?? `Expense: ${title}`,
+            date: new Date(date),
+          },
+        });
+      }
+
+      return tx.expense.update({
+        where: { id },
+        data: {
+          title,
+          description,
+          amount,
+          paymentMethod,
+          notes,
+          date: new Date(date),
+          categoryId: categoryRecord.id,
+          savingsAccountId,
+        },
+        include: { category: true, savingsAccount: true },
+      });
+    });
+
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message ?? "Unable to update expense." },
+      { status: 400 }
+    );
+  }
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -52,6 +121,33 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const existing = await prisma.expense.findFirst({ where: { id, userId } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.expense.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (existing.savingsAccountId) {
+        await tx.savingsAccount.update({
+          where: { id: existing.savingsAccountId },
+          data: { balance: { increment: existing.amount } },
+        });
+
+        await tx.savingsTransaction.create({
+          data: {
+            accountId: existing.savingsAccountId,
+            type: "deposit",
+            amount: existing.amount,
+            notes: `Expense deleted (refund): ${existing.title}`,
+            date: new Date(),
+          },
+        });
+      }
+
+      await tx.expense.delete({ where: { id } });
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message ?? "Unable to delete expense." },
+      { status: 400 }
+    );
+  }
 }
