@@ -102,16 +102,22 @@ model Expense {
 model SavingsAccount {
   id           String               @id @default(cuid())
   name         String
-  type         String               // cash | bank | ewallet | credit_card | emergency | investment | company
+  type         String
   isCompany    Boolean              @default(false)
   balance      Float                @default(0)
   goal         Float?
   color        String?
+
   userId       String
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   transactions SavingsTransaction[]
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+
+  // NEW
+  expenses     Expense[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model SavingsTransaction {
