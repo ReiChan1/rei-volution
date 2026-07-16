@@ -71,21 +71,28 @@ model ExpenseCategory {
 }
 
 model Expense {
-  id             String           @id @default(cuid())
-  title          String
-  description    String?
-  amount         Float
-  paymentMethod  String
-  date           DateTime
-  receiptImage   String?
-  notes          String?
-  archived       Boolean          @default(false)
-  categoryId     String?
-  category       ExpenseCategory? @relation(fields: [categoryId], references: [id])
-  userId         String
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  title            String
+  description      String?
+  amount           Float
+  paymentMethod    String
+  date             DateTime
+  receiptImage     String?
+  notes            String?
+  archived         Boolean          @default(false)
+
+  categoryId       String?
+  category         ExpenseCategory? @relation(fields: [categoryId], references: [id])
+
+  // NEW
+  savingsAccountId String?
+  savingsAccount   SavingsAccount?  @relation(fields: [savingsAccountId], references: [id])
+
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 // ---------------------------------------------------------------------------
