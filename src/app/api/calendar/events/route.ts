@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { CATEGORY_COLORS } from "@/lib/calendar";
 
 const eventSchema = z.object({
   title: z.string().min(1),
+  description: z.string().optional(),
+  location: z.string().optional(),
   start: z.string().min(1),
   end: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
   allDay: z.boolean().default(true),
   type: z.enum(["meeting", "birthday", "event", "deadline"]).default("event"),
   color: z.string().optional(),
@@ -37,21 +42,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
 
-  const COLORS: Record<string, string> = {
-    meeting: "#A78BDB",
-    birthday: "#F3B988",
-    deadline: "#F2A0B3",
-    event: "#7FD1B9",
-  };
-
   const event = await prisma.calendarEvent.create({
     data: {
       title: parsed.data.title,
+      description: parsed.data.description || null,
+      location: parsed.data.location || null,
       start: new Date(parsed.data.start),
       end: parsed.data.end ? new Date(parsed.data.end) : null,
+      startTime: parsed.data.startTime || null,
+      endTime: parsed.data.endTime || null,
       allDay: parsed.data.allDay,
       type: parsed.data.type,
-      color: parsed.data.color ?? COLORS[parsed.data.type],
+      color: parsed.data.color ?? CATEGORY_COLORS[parsed.data.type],
       userId,
     },
   });
