@@ -20,7 +20,7 @@ export async function GET() {
     prisma.calendarEvent.findMany({
       where: { userId, start: { gte: now } },
       orderBy: { start: "asc" },
-      take: 5,
+      take: 10,
     }),
     prisma.settings.findUnique({ where: { userId } }),
   ]);
