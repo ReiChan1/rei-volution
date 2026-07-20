@@ -25,7 +25,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatCard, StatCardSkeleton } from "@/components/dashboard/stat-card";
-import { formatCurrency, greeting } from "@/lib/utils";
+import { formatCurrency, formatTimeOfDay, greeting, EVENT_CATEGORY_LABEL } from "@/lib/utils";
 
 type Summary = {
   totalExpensesThisMonth: number;
@@ -34,7 +34,15 @@ type Summary = {
   companySavings: number;
   pendingTasks: number;
   completedTasks: number;
-  upcomingEvents: { id: string; title: string; start: string; color: string | null }[];
+  upcomingEvents: {
+    id: string;
+    title: string;
+    start: string;
+    color: string | null;
+    type: string;
+    allDay: boolean;
+    startTime: string | null;
+  }[];
   expensesByCategory: { name: string; value: number }[];
   monthlyTrend: { month: string; amount: number }[];
 };
@@ -159,24 +167,28 @@ export default function DashboardOverviewPage() {
             <CardTitle>Upcoming events</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {summary?.upcomingEvents.length ? (
-              summary.upcomingEvents.map((e) => (
-                <div key={e.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ background: e.color ?? "var(--primary)" }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{e.title}</p>
-                    <p className="text-xs text-muted">
-                      {new Date(e.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </p>
+            <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
+              {summary?.upcomingEvents.length ? (
+                summary.upcomingEvents.map((e) => (
+                  <div key={e.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ background: e.color ?? "var(--primary)" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                        <span>{new Date(e.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                        {!e.allDay && e.startTime && <span>· {formatTimeOfDay(e.startTime)}</span>}
+                      </p>
+                    </div>
+                    <Badge variant="muted" className="shrink-0">{EVENT_CATEGORY_LABEL[e.type] ?? e.type}</Badge>
                   </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted">Nothing scheduled yet. Add a task with a due date.</p>
-            )}
+                ))
+              ) : (
+                <p className="text-sm text-muted">Nothing scheduled yet. Add a task with a due date, or a new event on the calendar.</p>
+              )}
+            </div>
             <Link
               href="/dashboard/calendar"
               className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
