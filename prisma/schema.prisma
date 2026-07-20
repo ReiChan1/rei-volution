@@ -71,28 +71,21 @@ model ExpenseCategory {
 }
 
 model Expense {
-  id               String           @id @default(cuid())
-  title            String
-  description      String?
-  amount           Float
-  paymentMethod    String
-  date             DateTime
-  receiptImage     String?
-  notes            String?
-  archived         Boolean          @default(false)
-
-  categoryId       String?
-  category         ExpenseCategory? @relation(fields: [categoryId], references: [id])
-
-  // NEW
-  savingsAccountId String?
-  savingsAccount   SavingsAccount?  @relation(fields: [savingsAccountId], references: [id])
-
-  userId           String
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String           @id @default(cuid())
+  title          String
+  description    String?
+  amount         Float
+  paymentMethod  String
+  date           DateTime
+  receiptImage   String?
+  notes          String?
+  archived       Boolean          @default(false)
+  categoryId     String?
+  category       ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -102,22 +95,16 @@ model Expense {
 model SavingsAccount {
   id           String               @id @default(cuid())
   name         String
-  type         String
+  type         String               // cash | bank | ewallet | credit_card | emergency | investment | company
   isCompany    Boolean              @default(false)
   balance      Float                @default(0)
   goal         Float?
   color        String?
-
   userId       String
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   transactions SavingsTransaction[]
-
-  // NEW
-  expenses     Expense[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 }
 
 model SavingsTransaction {
@@ -227,18 +214,23 @@ model Report {
 // ---------------------------------------------------------------------------
 
 model CalendarEvent {
-  id        String   @id @default(cuid())
-  title     String
-  start     DateTime
-  end       DateTime?
-  allDay    Boolean  @default(true)
-  type      String   @default("event") // task | deadline | meeting | birthday | event
-  color     String?
-  taskId    String?  @unique
-  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  start       DateTime
+  end         DateTime?
+  startTime   String?  // "HH:mm", separate from the date part of `start`
+  endTime     String?  // "HH:mm"
+  allDay      Boolean  @default(true)
+  type        String   @default("event") // task | deadline | meeting | birthday | event — doubles as "category"
+  color       String?
+  taskId      String?  @unique
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ---------------------------------------------------------------------------
