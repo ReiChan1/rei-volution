@@ -1,195 +1,128 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-// Helper to combine a Date object or string with a "HH:mm" time string
-function combineDateAndTime(dateStr: string | Date, timeStr?: string | null): Date | null {
-  if (!timeStr) return null;
-  const [hours, minutes] = timeStr.split(":").map(Number);
-  const date = new Date(dateStr);
-  date.setHours(hours, minutes, 0, 0);
-  return date;
+// Helper to compute local midnight date in UTC
+function getTodayDateString(d: Date = new Date()): Date {
+  const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0];
+  return new Date(`${localIso}T00:00:00.000Z`);
 }
 
-// ---------------------------------------------------------------------------
-// GET /api/attendance
-// Supports query parameters: ?range=month | ?range=week | ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
-// ---------------------------------------------------------------------------
-export async function GET(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const range = searchParams.get("range");
-    const startDateParam = searchParams.get("startDate");
-    const endDateParam = searchParams.get("endDate");
-
-    let whereClause: any = { userId: session.user.id };
-
-    const now = new Date();
-
-    if (range === "month") {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      whereClause.date = {
-        gte: startOfMonth,
-        lte: endOfMonth,
-      };
-    } else if (range === "week") {
-      const dayOfWeek = now.getDay();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - dayOfWeek);
-      startOfWeek.setHours(0, 0, 0, 0);
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-
-      whereClause.date = {
-        gte: startOfWeek,
-        lte: endOfWeek,
-      };
-    } else if (startDateParam || endDateParam) {
-      whereClause.date = {};
-      if (startDateParam) {
-        whereClause.date.gte = new Date(startDateParam);
-      }
-      if (endDateParam) {
-        const endDate = new Date(endDateParam);
-        endDate.setHours(23, 59, 59, 999);
-        whereClause.date.lte = endDate;
-      }
-    }
-
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: whereClause,
-      orderBy: { date: "desc" },
-    });
-
-    return NextResponse.json(attendanceRecords);
-  } catch (error) {
-    console.error("GET /api/attendance error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch attendance records" },
-      { status: 500 }
-    );
+function computeHours(
+  timeIn: Date | null,
+  lunchOut: Date | null,
+  lunchIn: Date | null,
+  timeOut: Date | null
+) {
+  if (!timeIn || !timeOut) return 0;
+  let ms = timeOut.getTime() - timeIn.getTime();
+  if (lunchOut && lunchIn) {
+    ms -= lunchIn.getTime() - lunchOut.getTime();
   }
+  return Math.max(0, Math.round((ms / 3600000) * 100) / 100);
 }
 
-// ---------------------------------------------------------------------------
-// POST /api/attendance
-// Creates or logs attendance and calculates totals, late mins, and overtime
-// ---------------------------------------------------------------------------
+// GET: Fetch history + today's active record
+export async function GET() {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userId = (session.user as any).id;
+
+  const today = getTodayDateString();
+
+  // Fetch full history
+  const history = await prisma.attendance.findMany({
+    where: { userId },
+    orderBy: { date: "desc" },
+    take: 30,
+  });
+
+  // Today's record for clock component
+  const todayRecord = history.find(
+    (item) => new Date(item.date).toISOString().split("T")[0] === today.toISOString().split("T")[0]
+  ) || null;
+
+  return NextResponse.json({ history, todayRecord });
+}
+
+// POST: Manual Entry & Editing (AttendanceForm modal)
 export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-    const body = await req.json();
-    const {
-      date,
-      timeInStr,
-      lunchOutStr,
-      lunchInStr,
-      timeOutStr,
-      notes,
-      useDefaults = false,
-    } = body;
-
-    if (!date) {
-      return NextResponse.json({ error: "Date is required" }, { status: 400 });
-    }
-
-    // Fetch user schedule settings
-    const userSettings = await prisma.settings.findUnique({
-      where: { userId },
-    });
-
-    // Determine target time strings
-    const finalTimeInStr = timeInStr || (useDefaults ? userSettings?.workTimeIn : null);
-    const finalTimeOutStr = timeOutStr || (useDefaults ? userSettings?.workTimeOut : null);
-
-    const timeIn = combineDateAndTime(date, finalTimeInStr);
-    const lunchOut = combineDateAndTime(date, lunchOutStr);
-    const lunchIn = combineDateAndTime(date, lunchInStr);
-    const timeOut = combineDateAndTime(date, finalTimeOutStr);
-
-    const expectedWorkInStr = userSettings?.workTimeIn || "08:00";
-    const expectedWorkOutStr = userSettings?.workTimeOut || "17:00";
-    const expectedHours = userSettings?.expectedHours || 8.0;
-
-    const expectedTimeIn = combineDateAndTime(date, expectedWorkInStr);
-
-    // 1. Calculate Late Minutes
-    let lateMinutes = 0;
-    if (timeIn && expectedTimeIn && timeIn > expectedTimeIn) {
-      lateMinutes = Math.floor((timeIn.getTime() - expectedTimeIn.getTime()) / (1000 * 60));
-    }
-
-    // 2. Calculate Break Minutes
-    let breakMinutes = 0;
-    if (lunchOut && lunchIn && lunchIn > lunchOut) {
-      breakMinutes = Math.floor((lunchIn.getTime() - lunchOut.getTime()) / (1000 * 60));
-    }
-
-    // 3. Calculate Total Worked Hours
-    let totalHours = 0;
-    if (timeIn && timeOut && timeOut > timeIn) {
-      const grossMins = (timeOut.getTime() - timeIn.getTime()) / (1000 * 60);
-      const netMins = Math.max(0, grossMins - breakMinutes);
-      totalHours = parseFloat((netMins / 60).toFixed(2));
-    }
-
-    // 4. Calculate Overtime & Undertime Minutes
-    let overtimeMins = 0;
-    let undertimeMins = 0;
-
-    if (totalHours > 0) {
-      const diffMins = Math.round((totalHours - expectedHours) * 60);
-      if (diffMins > 0) {
-        overtimeMins = diffMins;
-      } else if (diffMins < 0) {
-        undertimeMins = Math.abs(diffMins);
-      }
-    }
-
-    // 5. Determine Status
-    let status = "present";
-    if (lateMinutes > 0) {
-      status = "late";
-    }
-
-    const attendance = await prisma.attendance.create({
-      data: {
-        userId,
-        date: new Date(date),
-        timeIn,
-        lunchOut,
-        lunchIn,
-        timeOut,
-        status,
-        lateMinutes,
-        overtimeMins,
-        undertimeMins,
-        breakMinutes,
-        expectedHours,
-        totalHours,
-        notes,
-      },
-    });
-
-    return NextResponse.json(attendance, { status: 201 });
-  } catch (error) {
-    console.error("POST /api/attendance error:", error);
-    return NextResponse.json(
-      { error: "Failed to create attendance entry" },
-      { status: 500 }
-    );
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = (session.user as any).id;
+
+  const body = await req.json();
+  const { id, date, timeInStr, lunchOutStr, lunchInStr, timeOutStr, notes } = body;
+
+  if (!date || !timeInStr) {
+    return NextResponse.json({ error: "Date and Time In are required" }, { status: 400 });
+  }
+
+  // Parse time strings into Date objects
+  const entryDate = new Date(`${date}T00:00:00.000Z`);
+
+  const parseTime = (timeStr?: string | null) => {
+    if (!timeStr) return null;
+    return new Date(`${date}T${timeStr}:00.000Z`);
+  };
+
+  const timeIn = parseTime(timeInStr);
+  const lunchOut = parseTime(lunchOutStr);
+  const lunchIn = parseTime(lunchInStr);
+  const timeOut = parseTime(timeOutStr);
+
+  const totalHours = computeHours(timeIn, lunchOut, lunchIn, timeOut);
+
+  // Fetch user settings to check late status
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { settings: { select: { workTimeIn: true } } },
+  });
+
+  const targetWorkIn = user?.settings?.workTimeIn || "08:00";
+  const [targetHour, targetMin] = targetWorkIn.split(":").map(Number);
+  
+  const shiftStart = new Date(`${date}T${String(targetHour).padStart(2, "0")}:${String(targetMin).padStart(2, "0")}:00.000Z`);
+  const isLate = timeIn ? timeIn > shiftStart : false;
+
+  const data = {
+    userId,
+    date: entryDate,
+    timeIn,
+    lunchOut,
+    lunchIn,
+    timeOut,
+    notes,
+    totalHours,
+    status: isLate ? "late" : "present",
+  };
+
+  let record;
+  if (id) {
+    // Edit existing entry
+    record = await prisma.attendance.update({
+      where: { id },
+      data,
+    });
+  } else {
+    // Create new manual entry
+    record = await prisma.attendance.upsert({
+      where: {
+        userId_date: {
+          userId,
+          date: entryDate,
+        },
+      },
+      update: data,
+      create: data,
+    });
+  }
+
+  return NextResponse.json(record);
 }
