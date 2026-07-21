@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { LogOut, Moon, Sun, Download, KeyRound, ShieldCheck, Trash2, Check } from "lucide-react";
+import { LogOut, Moon, Sun, Download, KeyRound, ShieldCheck, Trash2, Check, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,11 +39,19 @@ export default function SettingsPage() {
     setStoredAccent(id);
   }
 
+  // Preferences state
   const [currency, setCurrency] = useState("USD");
   const [timezone, setTimezone] = useState("UTC");
   const [monthlyBudget, setMonthlyBudget] = useState("");
   const [savingPrefs, setSavingPrefs] = useState(false);
 
+  // Company Work Hours state
+  const [workTimeIn, setWorkTimeIn] = useState("08:00");
+  const [workTimeOut, setWorkTimeOut] = useState("17:00");
+  const [expectedHours, setExpectedHours] = useState("8");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  // Dialog states
   const [pwOpen, setPwOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -53,11 +61,18 @@ export default function SettingsPage() {
   const [newPin, setNewPin] = useState("");
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((data) => {
-      setCurrency(data.currency ?? "USD");
-      setTimezone(data.timezone ?? "UTC");
-      setMonthlyBudget(data.monthlyBudget ? String(data.monthlyBudget) : "");
-    }).catch(() => {});
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data) return;
+        setCurrency(data.currency ?? "USD");
+        setTimezone(data.timezone ?? "UTC");
+        setMonthlyBudget(data.monthlyBudget ? String(data.monthlyBudget) : "");
+        if (data.workTimeIn) setWorkTimeIn(data.workTimeIn);
+        if (data.workTimeOut) setWorkTimeOut(data.workTimeOut);
+        if (data.expectedHours) setExpectedHours(String(data.expectedHours));
+      })
+      .catch(() => {});
   }, []);
 
   async function savePreferences() {
@@ -71,6 +86,22 @@ export default function SettingsPage() {
     if (!res.ok) { toast.error("Could not save preferences"); return; }
     await update({ currency });
     toast.success("Preferences saved — your new currency is now used everywhere.");
+  }
+
+  async function saveSchedule() {
+    setSavingSchedule(true);
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workTimeIn,
+        workTimeOut,
+        expectedHours: expectedHours ? Number(expectedHours) : 8.0,
+      }),
+    });
+    setSavingSchedule(false);
+    if (!res.ok) { toast.error("Could not save office schedule"); return; }
+    toast.success("Work schedule saved — default hours updated.");
   }
 
   async function submitPasswordChange() {
@@ -109,9 +140,10 @@ export default function SettingsPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Settings</h1>
-        <p className="text-sm text-muted">Manage your profile, preferences, and security. 🐾</p>
+        <p className="text-sm text-muted">Manage your profile, preferences, work schedule, and security. 🐾</p>
       </div>
 
+      {/* Profile */}
       <Card>
         <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
         <CardContent className="flex items-center gap-4">
@@ -127,6 +159,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Appearance */}
       <Card>
         <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -176,6 +209,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Preferences */}
       <Card>
         <CardHeader><CardTitle>Preferences</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -204,6 +238,55 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Office Work Schedule */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-muted" /> Company Work Schedule
+          </CardTitle>
+          <CardDescription>
+            Configure your standard shift times to calculate tardiness, undertime, and overtime automatically.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Standard Time In</Label>
+              <Input
+                type="time"
+                value={workTimeIn}
+                onChange={(e) => setWorkTimeIn(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Standard Time Out</Label>
+              <Input
+                type="time"
+                value={workTimeOut}
+                onChange={(e) => setWorkTimeOut(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Expected Daily Hours</Label>
+            <Input
+              type="number"
+              step="0.5"
+              min="1"
+              max="24"
+              value={expectedHours}
+              onChange={(e) => setExpectedHours(e.target.value)}
+              placeholder="8"
+            />
+            <p className="text-xs text-muted">Required net work hours per day (excluding breaks).</p>
+          </div>
+          <Button onClick={saveSchedule} disabled={savingSchedule}>
+            {savingSchedule ? "Saving schedule…" : "Save work schedule"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Security */}
       <Card>
         <CardHeader><CardTitle>Security</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -228,6 +311,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Data */}
       <Card>
         <CardHeader><CardTitle>Data</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -243,6 +327,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Danger Zone */}
       <Card>
         <CardHeader>
           <CardTitle>Danger zone</CardTitle>
@@ -259,6 +344,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Change Password Dialog */}
       <Dialog open={pwOpen} onOpenChange={setPwOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Change password</DialogTitle></DialogHeader>
@@ -281,6 +367,7 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Change PIN Dialog */}
       <Dialog open={pinOpen} onOpenChange={setPinOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Change security PIN</DialogTitle></DialogHeader>
