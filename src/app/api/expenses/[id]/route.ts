@@ -6,7 +6,7 @@ import { expenseSchema } from "@/lib/validations";
 // Helper function to handle update logic for both PUT and PATCH
 async function handleUpdate(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
 
@@ -18,7 +18,15 @@ async function handleUpdate(
   }
 
   const userId = (session.user as any).id;
-  const expenseId = params.id;
+  const resolvedParams = await params;
+  const expenseId = resolvedParams.id;
+
+  if (!expenseId) {
+    return NextResponse.json(
+      { error: "Missing expense ID" },
+      { status: 400 }
+    );
+  }
 
   const body = await req.json();
 
@@ -114,7 +122,7 @@ async function handleUpdate(
 // 1. Export PATCH Handler
 export async function PATCH(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   return handleUpdate(req, context);
 }
@@ -122,7 +130,7 @@ export async function PATCH(
 // 2. Export PUT Handler
 export async function PUT(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   return handleUpdate(req, context);
 }
@@ -130,7 +138,7 @@ export async function PUT(
 // 3. Export DELETE Handler
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
 
@@ -142,7 +150,15 @@ export async function DELETE(
   }
 
   const userId = (session.user as any).id;
-  const expenseId = params.id;
+  const resolvedParams = await params;
+  const expenseId = resolvedParams.id;
+
+  if (!expenseId) {
+    return NextResponse.json(
+      { error: "Missing expense ID" },
+      { status: 400 }
+    );
+  }
 
   try {
     const existingExpense = await prisma.expense.findFirst({
