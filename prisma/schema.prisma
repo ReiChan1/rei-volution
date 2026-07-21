@@ -22,32 +22,32 @@ model Company {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  firstName      String
-  lastName       String
-  email          String    @unique
-  passwordHash   String
-  pinHash        String?
-  jobPosition    String?
-  profileImage   String?
-  companyId      String?
-  company        Company?  @relation(fields: [companyId], references: [id])
-  theme          String    @default("dark")
-  currency       String    @default("USD")
-  timezone       String    @default("UTC")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String   @unique
+  passwordHash    String
+  pinHash         String?
+  jobPosition     String?
+  profileImage    String?
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  theme           String   @default("dark")
+  currency        String   @default("USD")
+  timezone        String   @default("UTC")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  expenses       Expense[]
+  expenses        Expense[]
   savingsAccounts SavingsAccount[]
-  tasks          Task[]
-  taskLabels     TaskLabel[]
-  attendance     Attendance[]
-  calendarEvents CalendarEvent[]
-  notifications  Notification[]
-  reports        Report[]
-  settings       Settings?
-  sessions       Session[]
+  tasks           Task[]
+  taskLabels      TaskLabel[]
+  attendance      Attendance[]
+  calendarEvents  CalendarEvent[]
+  notifications   Notification[]
+  reports         Report[]
+  settings        Settings?
+  sessions        Session[]
 }
 
 model Session {
@@ -71,21 +71,21 @@ model ExpenseCategory {
 }
 
 model Expense {
-  id             String           @id @default(cuid())
-  title          String
-  description    String?
-  amount         Float
-  paymentMethod  String
-  date           DateTime
-  receiptImage   String?
-  notes          String?
-  archived       Boolean          @default(false)
-  categoryId     String?
-  category       ExpenseCategory? @relation(fields: [categoryId], references: [id])
-  userId         String
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  amount        Float
+  paymentMethod String
+  date          DateTime
+  receiptImage  String?
+  notes         String?
+  archived      Boolean          @default(false)
+  categoryId    String?
+  category      ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -123,24 +123,24 @@ model SavingsTransaction {
 // ---------------------------------------------------------------------------
 
 model Attendance {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   date          DateTime
   timeIn        DateTime?
   lunchOut      DateTime?
   lunchIn       DateTime?
   timeOut       DateTime?
-  status        String   // present | absent | late | leave | holiday | half_day
-  lateMinutes   Int      @default(0)
-  overtimeMins  Int      @default(0)
-  undertimeMins Int      @default(0)
-  breakMinutes  Int      @default(0)
-  expectedHours Float    @default(8)
-  totalHours    Float    @default(0)
+  status        String    // present | absent | late | leave | holiday | half_day
+  lateMinutes   Int       @default(0)
+  overtimeMins  Int       @default(0)
+  undertimeMins Int       @default(0)
+  breakMinutes  Int       @default(0)
+  expectedHours Float     @default(8)
+  totalHours    Float     @default(0)
   notes         String?
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -148,39 +148,39 @@ model Attendance {
 // ---------------------------------------------------------------------------
 
 model TaskLabel {
-  id     String  @id @default(cuid())
+  id     String        @id @default(cuid())
   name   String
   color  String
   userId String
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks  TaskOnLabel[]
 }
 
 model Task {
-  id           String          @id @default(cuid())
-  title        String
-  description  String?
-  priority     String          @default("medium") // low | medium | high | critical
-  status       String          @default("pending") // pending | in_progress | completed | cancelled
-  dueDate      DateTime?
-  dueTime      String?
-  reminder     Boolean         @default(false)
-  subtasks     Subtask[]
-  labels       TaskOnLabel[]
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  priority      String         @default("medium") // low | medium | high | critical
+  status        String         @default("pending") // pending | in_progress | completed | cancelled
+  dueDate       DateTime?
+  dueTime       String?
+  reminder      Boolean        @default(false)
+  subtasks      Subtask[]
+  labels        TaskOnLabel[]
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   calendarEvent CalendarEvent?
-  reports      Report[]
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  reports       Report[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Subtask {
-  id        String  @id @default(cuid())
-  title     String
-  done      Boolean @default(false)
-  taskId    String
-  task      Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id     String  @id @default(cuid())
+  title  String
+  done   Boolean @default(false)
+  taskId String
+  task   Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
 model TaskOnLabel {
@@ -197,16 +197,16 @@ model TaskOnLabel {
 // ---------------------------------------------------------------------------
 
 model Report {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
+  id         String   @id @default(cuid())
+  title      String
+  content    String
   reportDate DateTime @default(now())
-  taskId    String?
-  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  taskId     String?
+  task       Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -214,23 +214,23 @@ model Report {
 // ---------------------------------------------------------------------------
 
 model CalendarEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
   location    String?
   start       DateTime
   end         DateTime?
-  startTime   String?  // "HH:mm", separate from the date part of `start`
-  endTime     String?  // "HH:mm"
-  allDay      Boolean  @default(true)
-  type        String   @default("event") // task | deadline | meeting | birthday | event — doubles as "category"
+  startTime   String?   // "HH:mm", separate from the date part of `start`
+  endTime     String?   // "HH:mm"
+  allDay      Boolean   @default(true)
+  type        String    @default("event") // task | deadline | meeting | birthday | event — doubles as "category"
   color       String?
-  taskId      String?  @unique
-  task        Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      String?   @unique
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -249,13 +249,18 @@ model Notification {
 }
 
 model Settings {
-  id                 String  @id @default(cuid())
-  userId             String  @unique
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  monthlyBudget      Float?
-  dateFormat         String  @default("MM/dd/yyyy")
-  notifyTaskDue      Boolean @default(true)
-  notifyBudget       Boolean @default(true)
-  notifySavingsGoal  Boolean @default(true)
-  notifyAttendance   Boolean @default(true)
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthlyBudget     Float?
+  dateFormat        String  @default("MM/dd/yyyy")
+  notifyTaskDue     Boolean @default(true)
+  notifyBudget      Boolean @default(true)
+  notifySavingsGoal Boolean @default(true)
+  notifyAttendance  Boolean @default(true)
+
+  // Company Work Schedule Defaults
+  workTimeIn        String? @default("08:00") // 24-hour format "HH:mm"
+  workTimeOut       String? @default("17:00") // 24-hour format "HH:mm"
+  expectedHours     Float   @default(8.0)
 }
