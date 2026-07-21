@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Helper to compute local midnight date in UTC
+// Helper to compute local midnight date
 function getTodayDateString(d: Date = new Date()): Date {
   const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
     .split("T")[0];
-  return new Date(`${localIso}T00:00:00.000Z`);
+  return new Date(`${localIso}T00:00:00`);
 }
 
 function computeHours(
@@ -41,10 +41,12 @@ export async function GET() {
     take: 30,
   });
 
-  // Today's record for clock component
-  const todayRecord = history.find(
-    (item) => new Date(item.date).toISOString().split("T")[0] === today.toISOString().split("T")[0]
-  ) || null;
+  // Extract today's record for clock component matching local date strings
+  const todayDateStr = today.toISOString().split("T")[0];
+  const todayRecord =
+    history.find(
+      (item) => new Date(item.date).toISOString().split("T")[0] === todayDateStr
+    ) || null;
 
   return NextResponse.json({ history, todayRecord });
 }
@@ -64,18 +66,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Date and Time In are required" }, { status: 400 });
   }
 
-  // Parse time strings into Date objects
-  const entryDate = new Date(`${date}T00:00:00.000Z`);
-
-  const parseTime = (timeStr?: string | null) => {
+  // Parse time strings in local timezone context without 'Z' suffix
+  const parseLocalTime = (timeStr?: string | null) => {
     if (!timeStr) return null;
-    return new Date(`${date}T${timeStr}:00.000Z`);
+    return new Date(`${date}T${timeStr}:00`);
   };
 
-  const timeIn = parseTime(timeInStr);
-  const lunchOut = parseTime(lunchOutStr);
-  const lunchIn = parseTime(lunchInStr);
-  const timeOut = parseTime(timeOutStr);
+  const entryDate = new Date(`${date}T00:00:00`);
+  const timeIn = parseLocalTime(timeInStr);
+  const lunchOut = parseLocalTime(lunchOutStr);
+  const lunchIn = parseLocalTime(lunchInStr);
+  const timeOut = parseLocalTime(timeOutStr);
 
   const totalHours = computeHours(timeIn, lunchOut, lunchIn, timeOut);
 
@@ -86,9 +87,7 @@ export async function POST(req: Request) {
   });
 
   const targetWorkIn = user?.settings?.workTimeIn || "08:00";
-  const [targetHour, targetMin] = targetWorkIn.split(":").map(Number);
-  
-  const shiftStart = new Date(`${date}T${String(targetHour).padStart(2, "0")}:${String(targetMin).padStart(2, "0")}:00.000Z`);
+  const shiftStart = new Date(`${date}T${targetWorkIn}:00`);
   const isLate = timeIn ? timeIn > shiftStart : false;
 
   const data = {
