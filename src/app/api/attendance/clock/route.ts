@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Normalizes date to midnight in local time (or Asia/Manila offset +08:00)
+// Converts current time to local date string (YYYY-MM-DD) to query start of day
 function getTodayDateString(d: Date = new Date()): Date {
-  // Uses local date string format YYYY-MM-DD to avoid UTC offset rollbacks
   const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
     .split("T")[0];
@@ -44,22 +43,29 @@ export async function POST(req: Request) {
   const now = new Date();
   const today = getTodayDateString(now);
 
-  // Fetch today's existing record for the user
+  // Fetch today's existing attendance record
   let record = await prisma.attendance.findFirst({
     where: { userId, date: today },
   });
 
-  // Fetch user settings for standard work schedule (or fallback to defaults)
-  const userSettings = await prisma.user.findUnique({
+  // Fetch settings via the related `settings` relation on User
+  const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { workTimeIn: true, expectedHours: true },
+    select: {
+      settings: {
+        select: {
+          workTimeIn: true,
+          expectedHours: true,
+        },
+      },
+    },
   });
 
-  const targetWorkIn = userSettings?.workTimeIn || "08:00";
+  const targetWorkIn = user?.settings?.workTimeIn || "08:00";
   const [targetHour, targetMin] = targetWorkIn.split(":").map(Number);
 
   if (step === "timeIn") {
-    // RECOVERY FIX: Return the existing record so the UI updates and recovers state
+    // RECOVERY: Return the existing record so the UI can update its state
     if (record) {
       return NextResponse.json(
         {
@@ -70,7 +76,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Dynamic shift calculation based on Settings
+    // Dynamic late minute calculation based on user settings
     const shiftStart = new Date(now);
     shiftStart.setHours(targetHour, targetMin, 0, 0);
 
@@ -92,7 +98,7 @@ export async function POST(req: Request) {
     return NextResponse.json(record, { status: 201 });
   }
 
-  // If trying to do lunchOut / lunchIn / timeOut without a clock-in record
+  // If clocking lunch or out without an initial timeIn record
   if (!record) {
     return NextResponse.json({ error: "Clock in first" }, { status: 400 });
   }
@@ -102,7 +108,7 @@ export async function POST(req: Request) {
   if (step === "timeOut") {
     const tempRecord = { ...record, timeOut: now };
     const hours = computeHours(tempRecord);
-    const expected = userSettings?.expectedHours ?? 8;
+    const expected = user?.settings?.expectedHours ?? 8;
 
     data.timeOut = now;
     data.totalHours = hours;
