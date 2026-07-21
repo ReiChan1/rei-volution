@@ -99,7 +99,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           categoryId: categoryRecord.id,
           savingsAccountId,
         },
-        include: { category: true, savingsAccount: true },
+        include: { category: true},
       });
     });
 

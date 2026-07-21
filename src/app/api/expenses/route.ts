@@ -64,7 +64,6 @@ export async function GET(req: Request) {
       where,
       include: {
         category: true,
-        savingsAccount: true,
       },
       orderBy,
       skip: (page - 1) * pageSize,
