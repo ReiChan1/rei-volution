@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { CATEGORY_COLORS } from "@/lib/calendar";
+import { CATEGORY_COLORS } from "@/lib/calendar-lib";
 
 const eventSchema = z.object({
   title: z.string().min(1),
