@@ -1,57 +1,79 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-
-const settingsSchema = z.object({
-  currency: z.string().min(1).optional(),
-  timezone: z.string().min(1).optional(),
-  dateFormat: z.string().min(1).optional(),
-  monthlyBudget: z.coerce.number().optional().nullable(),
-});
+import { auth } from "@/lib/auth";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = (session.user as any).id;
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const [user, settings] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { currency: true, timezone: true, theme: true } }),
-    prisma.settings.findUnique({ where: { userId } }),
-  ]);
+    const settings = await prisma.settings.findUnique({
+      where: { userId: session.user.id },
+    });
 
-  return NextResponse.json({
-    currency: user?.currency ?? "USD",
-    timezone: user?.timezone ?? "UTC",
-    dateFormat: settings?.dateFormat ?? "MM/dd/yyyy",
-    monthlyBudget: settings?.monthlyBudget ?? null,
-  });
+    return NextResponse.json(settings);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch settings" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = (session.user as any).id;
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const body = await req.json();
-  const parsed = settingsSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
-  }
-  const { currency, timezone, dateFormat, monthlyBudget } = parsed.data;
+    const body = await req.json();
+    const {
+      monthlyBudget,
+      dateFormat,
+      notifyTaskDue,
+      notifyBudget,
+      notifySavingsGoal,
+      notifyAttendance,
+      workTimeIn,
+      workTimeOut,
+      expectedHours,
+    } = body;
 
-  if (currency || timezone) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { ...(currency ? { currency } : {}), ...(timezone ? { timezone } : {}) },
+    const settings = await prisma.settings.upsert({
+      where: { userId: session.user.id },
+      update: {
+        ...(monthlyBudget !== undefined && { monthlyBudget: parseFloat(monthlyBudget) }),
+        ...(dateFormat && { dateFormat }),
+        ...(notifyTaskDue !== undefined && { notifyTaskDue }),
+        ...(notifyBudget !== undefined && { notifyBudget }),
+        ...(notifySavingsGoal !== undefined && { notifySavingsGoal }),
+        ...(notifyAttendance !== undefined && { notifyAttendance }),
+        ...(workTimeIn !== undefined && { workTimeIn }),
+        ...(workTimeOut !== undefined && { workTimeOut }),
+        ...(expectedHours !== undefined && { expectedHours: parseFloat(expectedHours) }),
+      },
+      create: {
+        userId: session.user.id,
+        monthlyBudget: monthlyBudget ? parseFloat(monthlyBudget) : null,
+        dateFormat: dateFormat || "MM/dd/yyyy",
+        notifyTaskDue: notifyTaskDue ?? true,
+        notifyBudget: notifyBudget ?? true,
+        notifySavingsGoal: notifySavingsGoal ?? true,
+        notifyAttendance: notifyAttendance ?? true,
+        workTimeIn: workTimeIn || "08:00",
+        workTimeOut: workTimeOut || "17:00",
+        expectedHours: expectedHours ? parseFloat(expectedHours) : 8.0,
+      },
     });
+
+    return NextResponse.json(settings);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to update settings" },
+      { status: 500 }
+    );
   }
-
-  await prisma.settings.upsert({
-    where: { userId },
-    update: { ...(dateFormat ? { dateFormat } : {}), ...(monthlyBudget !== undefined ? { monthlyBudget } : {}) },
-    create: { userId, dateFormat: dateFormat ?? "MM/dd/yyyy", monthlyBudget: monthlyBudget ?? undefined },
-  });
-
-  return NextResponse.json({ ok: true });
 }
