@@ -225,29 +225,35 @@ export default function CalendarPage() {
         <Button onClick={() => openCreate()}><Plus className="h-4 w-4" /> New event</Button>
       </div>
 
-      <Card className="p-4 sm:p-6 [--fc-border-color:var(--border)] [--fc-page-bg-color:transparent] [--fc-neutral-bg-color:var(--surface-2)] [--fc-today-bg-color:color-mix(in_srgb,var(--primary)_10%,transparent)]">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }}
-          height="auto"
-          editable
-          eventClick={(info) => {
-            const found = events.find((e) => e.id === info.event.id);
-            if (found) setViewing(found);
-          }}
-          events={events.map((e) => ({
-            id: e.id,
-            title: e.title,
-            start: e.start,
-            end: e.end ?? undefined,
-            allDay: e.allDay,
-            backgroundColor: e.color ?? "#7C6CF0",
-            borderColor: e.color ?? "#7C6CF0",
-          }))}
-        />
-      </Card>
+      <Card className="h-[760px] p-4 sm:p-6 [--fc-border-color:var(--border)] [--fc-page-bg-color:transparent] [--fc-neutral-bg-color:var(--surface-2)] [--fc-today-bg-color:color-mix(in_srgb,var(--primary)_10%,transparent)]">
+  <div className="h-full overflow-y-auto">
+    <FullCalendar
+      ref={calendarRef}
+      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+      initialView="dayGridMonth"
+      headerToolbar={{
+        left: "prev,next today",
+        center: "title",
+        right: "dayGridMonth,timeGridWeek,timeGridDay",
+      }}
+      height="100%"
+      editable
+      eventClick={(info) => {
+        const found = events.find((e) => e.id === info.event.id);
+        if (found) setViewing(found);
+      }}
+      events={events.map((e) => ({
+        id: e.id,
+        title: e.title,
+        start: e.start,
+        end: e.end ?? undefined,
+        allDay: e.allDay,
+        backgroundColor: e.color ?? "#7C6CF0",
+        borderColor: e.color ?? "#7C6CF0",
+      }))}
+    />
+  </div>
+</Card>
 
       {/* Search + filters + scrollable event list */}
       <Card>
