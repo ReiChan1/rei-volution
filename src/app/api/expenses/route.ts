@@ -109,19 +109,19 @@ export async function GET(req: Request) {
   };
 
   const sum = (rows: StatRow[]) =>
-    rows.reduce((s,e)=>s+e.amount,0);
+    rows.reduce((s, e) => s + e.amount, 0);
 
   const stats = {
     monthly: sum(
-      allForStats.filter(e => e.date >= startOfMonth)
+      allForStats.filter((e) => e.date >= startOfMonth)
     ),
 
     weekly: sum(
-      allForStats.filter(e => e.date >= startOfWeek)
+      allForStats.filter((e) => e.date >= startOfWeek)
     ),
 
     yearly: sum(
-      allForStats.filter(e => e.date >= startOfYear)
+      allForStats.filter((e) => e.date >= startOfYear)
     ),
 
     total: sum(allForStats),
@@ -245,9 +245,7 @@ export async function POST(req: Request) {
             accountId: account.id,
             type: "withdraw",
             amount,
-            notes:
-              notes ??
-              `Expense: ${title}`,
+            notes: notes ?? `Expense: ${title}`,
             date: new Date(date),
           },
         });
@@ -265,10 +263,7 @@ export async function POST(req: Request) {
             date: new Date(date),
             notes,
             userId,
-
             categoryId: categoryRecord.id,
-
-            savingsAccountId: account.id,
           },
 
           include: {
@@ -278,18 +273,14 @@ export async function POST(req: Request) {
       }
     );
 
-    return NextResponse.json(
-      expense,
-      {
-        status: 201,
-      }
-    );
+    return NextResponse.json(expense, {
+      status: 201,
+    });
   } catch (error: any) {
     return NextResponse.json(
       {
         error:
-          error.message ??
-          "Unable to create expense.",
+          error.message ?? "Unable to create expense.",
       },
       {
         status: 400,
