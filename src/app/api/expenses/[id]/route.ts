@@ -18,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await prisma.expense.update({
       where: { id },
       data: { archived: body.archived },
-      include: { category: true, savingsAccount: true },
+      include: { category: true},
     });
     return NextResponse.json(updated);
   }
