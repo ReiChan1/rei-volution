@@ -240,3 +240,19 @@ h1, h2, h3, h4, .font-display {
   0% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
 }
+
+
+/* Scrollable card/panel */
+.scroll-panel {
+  max-height: 400px; /* Change to the height you want */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* If inside a flex layout */
+.flex-scroll-panel {
+  min-height: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
