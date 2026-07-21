@@ -274,7 +274,6 @@ export async function POST(req: Request) {
 
           include: {
             category: true,
-            savingsAccount: true,
           },
         });
       }
