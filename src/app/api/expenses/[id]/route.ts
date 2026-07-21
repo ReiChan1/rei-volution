@@ -38,7 +38,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
-      const accountChanged = existing.savingsAccountId !== savingsAccountId;
+      const accountChanged = (existing as any).savingsAccountId !== savingsAccountId;
       const amountChanged = existing.amount !== amount;
 
       if (accountChanged || amountChanged) {
