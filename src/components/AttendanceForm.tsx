@@ -1,6 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface AttendanceRecord {
+  id?: string;
+  date: string;
+  timeIn?: string | null;
+  lunchOut?: string | null;
+  lunchIn?: string | null;
+  timeOut?: string | null;
+  notes?: string | null;
+}
 
 interface UserSettings {
   workTimeIn?: string | null;
@@ -10,22 +20,50 @@ interface UserSettings {
 
 interface AttendanceFormProps {
   settings?: UserSettings | null;
+  initialData?: AttendanceRecord | null;
   onSuccess?: () => void;
 }
 
-export function AttendanceForm({ settings, onSuccess }: AttendanceFormProps) {
+export function AttendanceForm({ settings, initialData, onSuccess }: AttendanceFormProps) {
   const defaultIn = settings?.workTimeIn || "08:00";
   const defaultOut = settings?.workTimeOut || "17:00";
 
+  function extractTimeString(isoString?: string | null) {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+
   const [date, setDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    initialData ? initialData.date.split("T")[0] : new Date().toISOString().split("T")[0]
   );
-  const [timeInStr, setTimeInStr] = useState<string>(defaultIn);
-  const [lunchOutStr, setLunchOutStr] = useState<string>("");
-  const [lunchInStr, setLunchInStr] = useState<string>("");
-  const [timeOutStr, setTimeOutStr] = useState<string>(defaultOut);
-  const [notes, setNotes] = useState<string>("");
+  const [timeInStr, setTimeInStr] = useState<string>(
+    initialData?.timeIn ? extractTimeString(initialData.timeIn) : defaultIn
+  );
+  const [lunchOutStr, setLunchOutStr] = useState<string>(
+    extractTimeString(initialData?.lunchOut)
+  );
+  const [lunchInStr, setLunchInStr] = useState<string>(
+    extractTimeString(initialData?.lunchIn)
+  );
+  const [timeOutStr, setTimeOutStr] = useState<string>(
+    initialData?.timeOut ? extractTimeString(initialData.timeOut) : defaultOut
+  );
+  const [notes, setNotes] = useState<string>(initialData?.notes || "");
   const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setDate(initialData.date.split("T")[0]);
+      setTimeInStr(extractTimeString(initialData.timeIn) || defaultIn);
+      setLunchOutStr(extractTimeString(initialData.lunchOut));
+      setLunchInStr(extractTimeString(initialData.lunchIn));
+      setTimeOutStr(extractTimeString(initialData.timeOut) || defaultOut);
+      setNotes(initialData.notes || "");
+    }
+  }, [initialData]);
 
   const handleApplyDefaults = () => {
     setTimeInStr(defaultIn);
@@ -41,6 +79,7 @@ export function AttendanceForm({ settings, onSuccess }: AttendanceFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: initialData?.id, // Includes ID if editing an existing entry
           date,
           timeInStr,
           lunchOutStr: lunchOutStr || null,
@@ -53,7 +92,7 @@ export function AttendanceForm({ settings, onSuccess }: AttendanceFormProps) {
       if (res.ok) {
         if (onSuccess) onSuccess();
       } else {
-        alert("Failed to submit attendance.");
+        alert("Failed to save attendance entry.");
       }
     } catch (err) {
       console.error(err);
@@ -63,15 +102,15 @@ export function AttendanceForm({ settings, onSuccess }: AttendanceFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-5 rounded-xl bg-zinc-900 border border-zinc-800 text-white space-y-4 max-w-md">
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h2 className="font-semibold text-base text-zinc-100">Log Attendance</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 text-white">
+      <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+        <span className="text-xs text-zinc-400">Shift Time Presets</span>
         <button
           type="button"
           onClick={handleApplyDefaults}
           className="text-xs text-blue-400 hover:text-blue-300 font-medium transition"
         >
-          Fill Company Shift ({defaultIn} – {defaultOut})
+          Use Standard Shift ({defaultIn} – {defaultOut})
         </button>
       </div>
 
@@ -146,7 +185,7 @@ export function AttendanceForm({ settings, onSuccess }: AttendanceFormProps) {
         disabled={loading}
         className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition"
       >
-        {loading ? "Saving..." : "Save Attendance"}
+        {loading ? "Saving..." : initialData ? "Update Attendance" : "Save Attendance"}
       </button>
     </form>
   );
