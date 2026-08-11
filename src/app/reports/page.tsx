@@ -1,4 +1,4 @@
-import { ReportsPanel } from "@/components/ReportsPanel"; // Adjust path if needed
+import { ReportsPanel } from "@/components/dashboard/reports-panel"; // Adjust path if needed
 
 export default function ReportsPage() {
   return (
