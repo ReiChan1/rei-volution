@@ -1,15 +1,9 @@
-import { MonthlyReportButton } from "@/components/MonthlyReportButton";
+import { ReportsPanel } from "@/components/ReportsPanel"; // Adjust path if needed
 
 export default function ReportsPage() {
   return (
-    
-      
-        Reports
-        {/* Render the Save Monthly Report control */}
-        
-      
-
-      {/* Your existing list of reports */}
-    
+    <main className="container mx-auto p-4 sm:p-6">
+      <ReportsPanel />
+    </main>
   );
 }
