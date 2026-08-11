@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   const startDate = new Date(Date.UTC(year, month, 1));
   const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
 
-  // Query database for reports falling within the specified month
+  // Query database for all reports falling inside the target month
   const reports = await prisma.report.findMany({
     where: {
       userId,
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "No reports found for the selected month." }, { status: 404 });
   }
 
-  // Format individual entries into a single compiled document
+  // Compile individual entries into a single document format
   const monthName = startDate.toLocaleString("default", { month: "long", timeZone: "UTC" });
   const header = `MONTHLY REPORT SUMMARY: ${monthName.toUpperCase()} ${year}\nTotal Entries: ${reports.length}\n${"=".repeat(60)}\n\n`;
 
