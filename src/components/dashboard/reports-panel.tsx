@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { reportSchema, type ReportInput } from "@/lib/validations";
 import { useUIStore } from "@/store/ui-store";
+import { MonthlyReportDownload } from "@/components/MonthlyReportDownload";
 
 type Report = {
   id: string;
@@ -128,9 +129,12 @@ export function ReportsPanel() {
           <CardTitle>Reports</CardTitle>
           <CardDescription>Daily or weekly write-ups, saved as PDF anytime.</CardDescription>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" /> New report
-        </Button>
+        <div className="flex items-center gap-2">
+          <MonthlyReportDownload />
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" /> New report
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
